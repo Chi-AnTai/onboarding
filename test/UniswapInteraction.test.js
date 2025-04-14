@@ -142,6 +142,17 @@ describe("UniswapInteraction", function () {
     expect(afterLiquidity).to.greaterThan(beforeLiquidity);
   });
 
+  it("should not increase liquidity when no position exist", async () => {
+    await expect(contract
+      .connect(owner)
+      .increaseLiquidity(
+        ethers.parseEther("0.5"),
+        ethers.parseUnits("500", 6),
+        0,
+        0
+      )).to.be.rejectedWith("Position does not exist")
+  })
+
   it("should decrease liquidity", async () => {
     await contract
       .connect(owner)
@@ -161,6 +172,16 @@ describe("UniswapInteraction", function () {
     expect(beforeLiquidity).to.greaterThan(afterLiquidity);
   });
 
+  it("should not decrease liquidity when no position exist", async () => {
+    await expect(contract
+      .connect(owner)
+      .decreaseLiquidity(
+        1000,
+        0,
+        0
+      )).to.be.rejectedWith("Position does not exist")
+  })
+
   it("should collect fees", async () => {
     await contract
       .connect(owner)
@@ -174,6 +195,10 @@ describe("UniswapInteraction", function () {
       );
     await contract.connect(owner).collectTradingFee();
   });
+
+  it("should not collect fee when no position exist", async () => {
+    await expect(contract.connect(owner).collectTradingFee()).to.be.rejectedWith("Position does not exist")
+  })
 
   it("should burn the position", async () => {
     await contract
@@ -196,4 +221,8 @@ describe("UniswapInteraction", function () {
     );
     expect(balance).to.equal(0);
   });
+
+  it("should not burn when no position exist", async () => {
+    await expect(contract.connect(owner).removeAllLiquidityAndburnPosition()).to.be.rejectedWith("Position does not exist")
+  })
 });
