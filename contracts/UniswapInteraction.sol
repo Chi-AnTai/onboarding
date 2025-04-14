@@ -18,8 +18,6 @@ contract UniswapInteraction {
 
     uint256 public uniswap_position_id = 0;
 
-    constructor() {}
-
     function openPosition(
         int24 lowerTick,
         int24 upperTick,
@@ -115,11 +113,44 @@ contract UniswapInteraction {
         ).collect(collectParams);
     }
 
-    function burnPosition() external {
+    function removeAllLiquidityAndburnPosition() external {
         require(uniswap_position_id != 0, "Position does not exist");
+
+        uint128 liquidity = getPositionLiquidity();
+
+        INonfungiblePositionManager.DecreaseLiquidityParams
+            memory params = INonfungiblePositionManager
+                .DecreaseLiquidityParams({
+                    tokenId: uniswap_position_id,
+                    liquidity: liquidity,
+                    amount0Min: 0,
+                    amount1Min: 0,
+                    deadline: block.timestamp
+                });
+
+        INonfungiblePositionManager(UNI_POSITION_MANAGER_ADDRESS)
+            .decreaseLiquidity(params);
+
+        INonfungiblePositionManager.CollectParams
+            memory collectParams = INonfungiblePositionManager.CollectParams({
+                tokenId: uniswap_position_id,
+                recipient: address(this),
+                amount0Max: type(uint128).max,
+                amount1Max: type(uint128).max
+            });
+        INonfungiblePositionManager(UNI_POSITION_MANAGER_ADDRESS).collect(
+            collectParams
+        );
+
         INonfungiblePositionManager(UNI_POSITION_MANAGER_ADDRESS).burn(
             uniswap_position_id
         );
         uniswap_position_id = 0;
+    }
+
+    function getPositionLiquidity() public view returns (uint128 liquidity) {
+        (, , , , , , , liquidity, , , , ) = INonfungiblePositionManager(
+            UNI_POSITION_MANAGER_ADDRESS
+        ).positions(uniswap_position_id);
     }
 }
